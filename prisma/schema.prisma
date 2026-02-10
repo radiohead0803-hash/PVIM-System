@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Core Models for PVIM (Past Vehicle Issue Management)
+// -----------------------------------------------------------------------------
+
+// 1. Issue Master
+model Issue {
+  id               Int      @id @default(autoincrement())
+  title            String
+  programId        String   @map("program_id")
+  partNo           String   @map("part_no")
+  lineId           String   @map("line_id")
+  toolId           String?  @map("tool_id")
+  processId        String   @map("process_id")
+  
+  severity         String   // S, A, B, C
+  status           String   @default("DRAFT")
+  occurrenceStep   String   @map("occurrence_step")
+  
+  reportedBy       String   @map("reported_by")
+  assignedTo       String?  @map("assigned_to")
+  occurrenceDate   DateTime @map("occurrence_date")
+  dueDate          DateTime? @map("due_date")
+  
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  analysis         IssueAnalysis?
+  history          IssueStatusHistory[]
+  attachments      Attachment[]
+  approvals        Approval[]
+
+  @@map("issues")
+}
+
+// 2. 8D Analysis (Root Cause, Countermeasure, Verification)
+model IssueAnalysis {
+  issueId              Int      @id @map("issue_id")
+  issue                Issue    @relation(fields: [issueId], references: [id])
+  
+  symptomDetail        String?  @map("symptom_detail") @db.Text
+  rootCauseId          String?  @map("root_cause_id")
+  rootCauseDetail      String?  @map("root_cause_detail") @db.Text
+  
+  countermeasure       String?  @db.Text
+  isPermanent          Boolean  @default(false) @map("is_permanent")
+  
+  verificationMethod   String?  @map("verification_method") @db.Text
+  verificationResult   String?  @map("verification_result") @db.Text
+  verifiedAt           DateTime? @map("verified_at")
+  
+  horizontalDeploymentNeeded Boolean @default(false) @map("horizontal_deployment_needed")
+
+  @@map("issue_analysis")
+}
+
+// 3. Issue Status History (Timeline)
+model IssueStatusHistory {
+  id               Int      @id @default(autoincrement())
+  issueId          Int      @map("issue_id")
+  issue            Issue    @relation(fields: [issueId], references: [id])
+  
+  fromStatus       String?  @map("from_status")
+  toStatus         String   @map("to_status")
+  comment          String?  @db.Text
+  actorId          String   @map("actor_id")
+  
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("issue_status_history")
+}
+
+// 4. Attachments (Evidences)
+model Attachment {
+  id               Int      @id @default(autoincrement())
+  issueId          Int      @map("issue_id")
+  issue            Issue    @relation(fields: [issueId], references: [id])
+  
+  step             String   // e.g., DRAFT, ANALYSIS, VERIFICATION
+  fileName         String   @map("file_name")
+  filePath         String   @map("file_path")
+  fileSize         Int      @map("file_size")
+  mimeType         String   @map("mime_type")
+  uploadedBy       String   @map("uploaded_by")
+  
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("attachments")
+}
+
+// 5. Approvals (Digital Signatures)
+model Approval {
+  id               Int      @id @default(autoincrement())
+  issueId          Int      @map("issue_id")
+  issue            Issue    @relation(fields: [issueId], references: [id])
+  
+  step             String   // e.g., ANALYSIS_APPROVAL, FINAL_APPROVAL
+  sequence         Int      // Order of approval
+  approverId       String   @map("approver_id")
+  decision         String?  // PENDING, APPROVED, REJECTED
+  signedAt         DateTime? @map("signed_at")
+  signatureHash    String?  @map("signature_hash")
+  comment          String?  @db.Text
+
+  @@map("approvals")
+}
+
+// 6. Master Data Reference (Initial Setup)
+model VehicleProgram {
+  id               String   @id
+  projectName      String   @map("project_name")
+  sopDate          DateTime? @map("sop_date")
+  eolDate          DateTime? @map("eol_date")
+  segment          String?
+
+  @@map("vehicle_programs")
+}
+
+model Part {
+  partNo           String   @id @map("part_no")
+  partName         String   @map("part_name")
+  category         String?
+  supplierId       String?  @map("supplier_id")
+
+  @@map("parts")
+}
