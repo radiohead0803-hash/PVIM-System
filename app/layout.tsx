@@ -1,5 +1,16 @@
 import type { Metadata } from "next";
 import Link from 'next/link';
+import {
+  LayoutDashboard,
+  Inbox,
+  PlusCircle,
+  Search,
+  Grid3X3,
+  FileText,
+  Database,
+  Settings,
+  User
+} from 'lucide-react';
 import "./globals.css";
 import styles from "./layout.module.css";
 
@@ -19,43 +30,72 @@ export default function RootLayout({
         <div className={styles.layout}>
           <aside className={styles.sidebar}>
             <div className={styles.brand}>
-              <div style={{ width: 24, height: 24, borderRadius: 6, background: 'var(--system-blue)' }}></div>
-              PVIM System
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, #007AFF, #5856D6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: 14
+              }}>P</div>
+              PVIM 시스템
             </div>
 
-            <nav>
+            <nav style={{ flex: 1 }}>
               <div className={styles.navSection}>
-                <div className={styles.navTitle}>Workspace</div>
-                <Link href="/" className={`${styles.navItem} ${styles.navItemActive}`}>Dashboard</Link>
-                <div className={styles.navItem}>Inbox</div>
+                <div className={styles.navTitle}>워크스페이스</div>
+                <Link href="/" className={`${styles.navItem} ${styles.navItemActive}`}>
+                  <LayoutDashboard size={18} /> 대시보드
+                </Link>
+                <Link href="#" className={styles.navItem}>
+                  <Inbox size={18} /> 인박스
+                </Link>
                 <Link href="/issues/new" className={styles.navItem}>
-                  <span style={{ color: 'var(--system-blue)', fontWeight: 700 }}>+ </span>
-                  New Issue
+                  <PlusCircle size={18} color="var(--system-blue)" /> 이슈 등록
                 </Link>
               </div>
 
               <div className={styles.navSection}>
-                <div className={styles.navTitle}>Quality Management</div>
-                <div className={styles.navItem}>Issue Explorer</div>
-                <div className={styles.navItem}>Horizontal Matrix</div>
-                <div className={styles.navItem}>8D Reports</div>
+                <div className={styles.navTitle}>품질 관리</div>
+                <Link href="#" className={styles.navItem}>
+                  <Search size={18} /> 이슈 탐색기
+                </Link>
+                <Link href="#" className={styles.navItem}>
+                  <Grid3X3 size={18} /> 수평전개 매트릭스
+                </Link>
+                <Link href="#" className={styles.navItem}>
+                  <FileText size={18} /> 8D 보고서
+                </Link>
               </div>
 
               <div className={styles.navSection}>
-                <div className={styles.navTitle}>Admin</div>
-                <div className={styles.navItem}>Master Data</div>
-                <div className={styles.navItem}>Settings</div>
+                <div className={styles.navTitle}>시스템 관리</div>
+                <Link href="#" className={styles.navItem}>
+                  <Database size={18} /> 마스터 데이터
+                </Link>
+                <Link href="#" className={styles.navItem}>
+                  <Settings size={18} /> 설정
+                </Link>
               </div>
             </nav>
+
+            <div className={styles.userSection} style={{ borderTop: '1px solid var(--system-gray5)', paddingTop: 16 }}>
+              <div className={styles.userBadge}>
+                <div className={styles.avatar}><User size={16} /></div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>관리자</span>
+                  <span style={{ fontSize: 11, color: 'var(--system-gray)' }}>radiohead0803</span>
+                </div>
+              </div>
+            </div>
           </aside>
 
           <main className={styles.main}>
-            <header className={styles.header}>
-              <div className={styles.userBadge}>
-                <span>radiohead0803-hash</span>
-                <div className={styles.avatar}>RH</div>
-              </div>
-            </header>
+            {/* Header removed from here to follow modern seamless look, or integrated into main content if needed */}
             <div className={styles.content}>
               {children}
             </div>

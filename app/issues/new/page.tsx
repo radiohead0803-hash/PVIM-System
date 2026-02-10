@@ -11,7 +11,7 @@ export default async function NewIssuePage() {
             <header className={styles.header}>
                 <h1 className={styles.title}>과거차 이슈 등록</h1>
                 <p style={{ color: 'var(--system-gray)', marginTop: 4 }}>
-                    새로운 품질 문제점을 시스템에 등록합니다.
+                    새로운 품질 문제점을 시스템에 등록하고 추적을 시작합니다.
                 </p>
             </header>
 
@@ -27,7 +27,7 @@ export default async function NewIssuePage() {
                                     name="title"
                                     type="text"
                                     required
-                                    placeholder="예: 프론트 범퍼 도장 들뜸"
+                                    placeholder="예: 프론트 범퍼 도장 들뜸 현상"
                                     className={styles.input}
                                 />
                             </div>
@@ -61,21 +61,21 @@ export default async function NewIssuePage() {
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>심각도</label>
                                 <select name="severity" required className={styles.select}>
-                                    <option value="S">S (치명)</option>
-                                    <option value="A">A (중대)</option>
-                                    <option value="B">B (일반)</option>
-                                    <option value="C" selected>C (경미)</option>
+                                    <option value="S">S (치명 - 안전/법규)</option>
+                                    <option value="A">A (중대 - 기능정지)</option>
+                                    <option value="B">B (일반 - 품질불만)</option>
+                                    <option value="C" selected>C (경미 - 외관/단차)</option>
                                 </select>
                             </div>
 
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>발생 단계</label>
                                 <select name="occurrenceStep" required className={styles.select}>
-                                    <option value="개발">개발</option>
-                                    <option value="시사출">시사출</option>
-                                    <option value="양산승인">양산승인</option>
+                                    <option value="개발">개발 (DV/PV)</option>
+                                    <option value="시사출">시사출 (T0~Tn)</option>
+                                    <option value="양산승인">양산승인 (ISIR)</option>
                                     <option value="양산" selected>양산</option>
-                                    <option value="서비스">서비스</option>
+                                    <option value="서비스">서비스 (현장클레임)</option>
                                 </select>
                             </div>
 
@@ -86,7 +86,7 @@ export default async function NewIssuePage() {
 
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>발생 공정</label>
-                                <input name="processId" type="text" placeholder="예: 도장/사출" className={styles.input} />
+                                <input name="processId" type="text" placeholder="예: 도장/사출/조립" className={styles.input} />
                             </div>
 
                             <div className={styles.formGroup}>
@@ -102,7 +102,7 @@ export default async function NewIssuePage() {
 
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>보고자</label>
-                                <input name="reportedBy" type="text" defaultValue="radiohead0803-hash" required className={styles.input} />
+                                <input name="reportedBy" type="text" defaultValue="관리자" required className={styles.input} />
                             </div>
                         </div>
                     </div>
