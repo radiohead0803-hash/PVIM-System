@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from 'next/link';
 import "./globals.css";
 import styles from "./layout.module.css";
 
@@ -21,15 +22,18 @@ export default function RootLayout({
               <div style={{ width: 24, height: 24, borderRadius: 6, background: 'var(--system-blue)' }}></div>
               PVIM System
             </div>
-            
+
             <nav>
               <div className={styles.navSection}>
                 <div className={styles.navTitle}>Workspace</div>
-                <div className={`${styles.navItem} ${styles.navItemActive}`}>Dashboard</div>
+                <Link href="/" className={`${styles.navItem} ${styles.navItemActive}`}>Dashboard</Link>
                 <div className={styles.navItem}>Inbox</div>
-                <div className={styles.navItem}>My Issues</div>
+                <Link href="/issues/new" className={styles.navItem}>
+                  <span style={{ color: 'var(--system-blue)', fontWeight: 700 }}>+ </span>
+                  New Issue
+                </Link>
               </div>
-              
+
               <div className={styles.navSection}>
                 <div className={styles.navTitle}>Quality Management</div>
                 <div className={styles.navItem}>Issue Explorer</div>
@@ -44,7 +48,7 @@ export default function RootLayout({
               </div>
             </nav>
           </aside>
-          
+
           <main className={styles.main}>
             <header className={styles.header}>
               <div className={styles.userBadge}>

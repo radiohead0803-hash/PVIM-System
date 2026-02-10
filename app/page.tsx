@@ -1,6 +1,16 @@
 import styles from "./page.module.css";
+import { prisma } from "@/app/lib/prisma";
 
-export default function Home() {
+export default async function Home() {
+  const issues = await prisma.issue.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 10
+  });
+
+  const activeIssueCount = await prisma.issue.count({
+    where: { status: { not: 'CLOSED' } }
+  });
+
   return (
     <div className={styles.dashboard}>
       <header className={styles.sectionHeader}>
@@ -11,9 +21,9 @@ export default function Home() {
       <section className={styles.kpiGrid}>
         <div className={styles.kpiCard}>
           <div className={styles.kpiLabel}>진행 중인 이슈</div>
-          <div className={styles.kpiValue}>24</div>
+          <div className={styles.kpiValue}>{activeIssueCount}</div>
           <div className={`${styles.kpiTrend} ${styles.trendUp}`}>
-            ▲ 12% (지난주 대비)
+            ▲ 실시간 연동 중
           </div>
         </div>
 
@@ -59,36 +69,33 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td><span className={`${styles.severity} ${styles.severityS}`}>S</span></td>
-                <td>
-                  <div style={{ fontWeight: 600 }}>ISS-2024-001</div>
-                  <div style={{ fontSize: 13, color: 'var(--system-gray)' }}>프론트 범퍼 도장 들뜸 현상</div>
-                </td>
-                <td>MQ4</td>
-                <td><span className={`${styles.statusBadge} ${styles.analysis}`}>Analysis</span></td>
-                <td>2024.02.10</td>
-              </tr>
-              <tr>
-                <td><span className={`${styles.severity} ${styles.severityA}`}>A</span></td>
-                <td>
-                  <div style={{ fontWeight: 600 }}>ISS-2024-002</div>
-                  <div style={{ fontSize: 13, color: 'var(--system-gray)' }}>리어 도어 실링 누수 (시사출)</div>
-                </td>
-                <td>SX2</td>
-                <td><span className={`${styles.statusBadge} ${styles.draft}`}>Draft</span></td>
-                <td>2024.02.09</td>
-              </tr>
-              <tr>
-                <td><span className={`${styles.severity} ${styles.severityC}`}>C</span></td>
-                <td>
-                  <div style={{ fontWeight: 600 }}>ISS-2024-003</div>
-                  <div style={{ fontSize: 13, color: 'var(--system-gray)' }}>클러스터 베젤 조립 유격</div>
-                </td>
-                <td>EV6</td>
-                <td><span className={`${styles.statusBadge} ${styles.closed}`}>Closed</span></td>
-                <td>2024.02.08</td>
-              </tr>
+              {issues.map((issue) => (
+                <tr key={issue.id}>
+                  <td>
+                    <span className={`${styles.severity} ${styles[`severity${issue.severity}`]}`}>
+                      {issue.severity}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>ISS-{issue.id.toString().padStart(4, '0')}</div>
+                    <div style={{ fontSize: 13, color: 'var(--system-gray)' }}>{issue.title}</div>
+                  </td>
+                  <td>{issue.programId}</td>
+                  <td>
+                    <span className={`${styles.statusBadge} ${styles[issue.status.toLowerCase()]}`}>
+                      {issue.status}
+                    </span>
+                  </td>
+                  <td>{new Date(issue.occurrenceDate).toLocaleDateString('ko-KR')}</td>
+                </tr>
+              ))}
+              {issues.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: 'var(--system-gray)' }}>
+                    등록된 이슈가 없습니다.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
