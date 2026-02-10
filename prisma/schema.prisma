@@ -19,12 +19,27 @@ model Issue {
   id               Int      @id @default(autoincrement())
   title            String
   programId        String   @map("program_id")
-  partNo           String   @map("part_no")
-  lineId           String   @map("line_id")
+  partNo           String?  @map("part_no")
+  lineId           String?  @map("line_id")
   toolId           String?  @map("tool_id")
   processId        String   @map("process_id")
   
-  severity         String   // S, A, B, C
+  productFamily    String?  @map("product_family")
+  productGroup     String?  @map("product_group")
+  occurrenceSource String?  @map("occurrence_source")
+  occurrenceType   String?  @map("occurrence_type")
+  m4Type           String?  @map("m4_type")
+  problemType1     String?  @map("problem_type1")
+  problemType2     String?  @map("problem_type2")
+  importance       String?  // e.g., B(소음/외관...)
+  
+  cNo              String?  @map("c_no")
+  bodyNo           String?  @map("body_no")
+  occurrenceQty    Int?     @map("occurrence_qty")
+  claimCost        Int?     @map("claim_cost")
+  mgmtItem         String?  @map("mgmt_item") // e.g., 과거차
+  
+  severity         String   @default("C") // S, A, B, C
   status           String   @default("DRAFT")
   occurrenceStep   String   @map("occurrence_step")
   
@@ -55,6 +70,14 @@ model IssueAnalysis {
   rootCauseDetail      String?  @map("root_cause_detail")
   
   countermeasure       String? 
+  
+  actionDept           String?  @map("action_dept")
+  actionOwner          String?  @map("action_owner")
+  improvementRefDate   DateTime? @map("improvement_ref_date")
+  actionStatus         String?  @map("action_status") // e.g., 반영완료
+  actionCategory       String?  @map("action_category") // e.g., 설계변경
+  signOffStatus        String?  @map("sign_off_status")
+  
   isPermanent          Boolean  @default(false) @map("is_permanent")
   
   verificationMethod   String?  @map("verification_method")

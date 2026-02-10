@@ -18,16 +18,18 @@ export function AnalysisStep({
     title,
     initialContent,
     issueId,
-    fieldName
+    fieldName,
+    inputType = 'textarea'
 }: {
     num: string,
     title: string,
-    initialContent: string,
+    initialContent: string | boolean | Date,
     issueId: number,
-    fieldName?: string
+    fieldName?: string,
+    inputType?: 'textarea' | 'checkbox' | 'date'
 }) {
     const [isEditing, setIsEditing] = useState(false)
-    const [content, setContent] = useState(initialContent)
+    const [content, setContent] = useState<any>(initialContent)
     const [isLoading, setIsLoading] = useState(false)
 
     const handleSave = async () => {
@@ -41,6 +43,20 @@ export function AnalysisStep({
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const renderValue = () => {
+        if (typeof initialContent === 'boolean') {
+            return initialContent ? '완료됨 (Horizontal Deployment Active)' : '검토 중 (N/A)';
+        }
+        if (initialContent instanceof Date) {
+            return initialContent.toLocaleDateString();
+        }
+        if (typeof initialContent === 'string' && !isNaN(Date.parse(initialContent)) && initialContent.includes('-')) {
+            // Heuristic for date strings from server
+            return new Date(initialContent).toLocaleDateString();
+        }
+        return initialContent || '데이터가 없습니다.';
     }
 
     return (
@@ -59,12 +75,31 @@ export function AnalysisStep({
             <div className={styles.stepBody}>
                 {isEditing ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <textarea
-                            className={styles.textarea}
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            rows={4}
-                        />
+                        {inputType === 'checkbox' ? (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 0' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={!!content}
+                                    onChange={(e) => setContent(e.target.checked)}
+                                    style={{ width: 20, height: 20 }}
+                                />
+                                <span style={{ fontSize: 14, fontWeight: 500 }}>수평 전개(Horizontal Deployment) 이행 여부</span>
+                            </label>
+                        ) : inputType === 'date' ? (
+                            <input
+                                type="date"
+                                className={styles.input}
+                                value={content ? new Date(content).toISOString().split('T')[0] : ''}
+                                onChange={(e) => setContent(e.target.value)}
+                            />
+                        ) : (
+                            <textarea
+                                className={styles.textarea}
+                                value={content as string}
+                                onChange={(e) => setContent(e.target.value)}
+                                rows={4}
+                            />
+                        )}
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                             <button
                                 className={`${styles.button} ${styles.secondaryButton}`}
@@ -83,7 +118,7 @@ export function AnalysisStep({
                         </div>
                     </div>
                 ) : (
-                    <div className={styles.fieldValue}>{initialContent || '데이터가 없습니다.'}</div>
+                    <div className={styles.fieldValue}>{renderValue()}</div>
                 )}
             </div>
         </div>

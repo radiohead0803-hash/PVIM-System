@@ -25,11 +25,20 @@ const data = [
     { name: '7월', issues: 34, resolved: 43 },
 ];
 
-export function QualityTrendChart() {
+export function QualityTrendChart({ data }: { data: any[] }) {
+    const displayData = data || [
+        { name: '1월', issues: 40, resolved: 24 },
+        { name: '2월', issues: 30, resolved: 13 },
+        { name: '3월', issues: 20, resolved: 38 },
+        { name: '4월', issues: 27, resolved: 39 },
+        { name: '5월', issues: 18, resolved: 48 },
+        { name: '6월', issues: 23, resolved: 38 },
+        { name: '7월', issues: 34, resolved: 43 },
+    ];
     return (
         <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer>
-                <AreaChart data={data}>
+                <AreaChart data={displayData}>
                     <defs>
                         <linearGradient id="colorIssues" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#007AFF" stopOpacity={0.1} />
@@ -70,18 +79,18 @@ export function QualityTrendChart() {
     );
 }
 
-const severityData = [
-    { name: 'S (치명)', count: 4, color: '#FF3B30' },
-    { name: 'A (중대)', count: 7, color: '#FF9500' },
-    { name: 'B (일반)', count: 12, color: '#FFCC00' },
-    { name: 'C (경미)', count: 18, color: '#34C759' },
-];
+export function SeverityDistribution({ data }: { data: { name: string, count: number, color: string }[] }) {
+    const displayData = data || [
+        { name: 'S (치명)', count: 0, color: '#FF3B30' },
+        { name: 'A (중대)', count: 0, color: '#FF9500' },
+        { name: 'B (일반)', count: 0, color: '#FFCC00' },
+        { name: 'C (경미)', count: 0, color: '#34C759' },
+    ];
 
-export function SeverityDistribution() {
     return (
         <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer>
-                <BarChart data={severityData} layout="vertical">
+                <BarChart data={displayData} layout="vertical">
                     <XAxis type="number" hide />
                     <YAxis
                         dataKey="name"
@@ -96,7 +105,7 @@ export function SeverityDistribution() {
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                     />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
-                        {severityData.map((entry, index) => (
+                        {displayData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                     </Bar>

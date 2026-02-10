@@ -32,11 +32,69 @@ export default async function Home({ searchParams }: HomeProps) {
     take: 10
   });
 
-  const allIssues = await prisma.issue.findMany({ where }); // For export
+  const allIssues = await prisma.issue.findMany({ where });
 
+  // KPI 1: 진행 중인 이슈
   const activeIssueCount = await prisma.issue.count({
-    where: { status: { not: 'CLOSED' } }
+    where: { ...where, status: { not: 'CLOSED' } }
   });
+
+  // KPI 2: 평균 해결 리드타임 (최근 30일 종결 건 기준)
+  const recentlyClosed = await prisma.issue.findMany({
+    where: { ...where, status: 'CLOSED', updatedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+    include: { history: true }
+  });
+
+  let avgLeadTime = 0;
+  if (recentlyClosed.length > 0) {
+    const totalDays = recentlyClosed.reduce((acc, issue) => {
+      const closedEvent = issue.history.find(h => h.toStatus === 'CLOSED');
+      const start = issue.occurrenceDate;
+      const end = closedEvent ? closedEvent.createdAt : issue.updatedAt;
+      return acc + (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+    }, 0);
+    avgLeadTime = totalDays / recentlyClosed.length;
+  }
+
+  // KPI 3: 분석 대기 이슈 (DRAFT 상태)
+  const draftCount = await prisma.issue.count({
+    where: { ...where, status: 'DRAFT' }
+  });
+
+  // KPI 4: 수평전개 필요 이슈 비율
+  const analysisWithDeployment = await prisma.issueAnalysis.count({
+    where: { horizontalDeploymentNeeded: true }
+  });
+  const totalAnalysis = await prisma.issueAnalysis.count();
+  const deploymentRate = totalAnalysis > 0 ? (analysisWithDeployment / totalAnalysis * 100).toFixed(0) : 0;
+
+  // 그래프 데이터 가공 (최근 7개월 트렌드)
+  const now = new Date();
+  const trendData = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(now.getMonth() - i);
+    const month = (d.getMonth() + 1) + '월';
+    const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+    const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+    const monthIssues = allIssues.filter(iss => {
+      const occDate = new Date(iss.occurrenceDate);
+      return occDate >= startOfMonth && occDate <= endOfMonth;
+    });
+    const monthResolved = allIssues.filter(iss => {
+      return iss.status === 'CLOSED' && iss.updatedAt >= startOfMonth && iss.updatedAt <= endOfMonth;
+    });
+
+    trendData.push({ name: month, issues: monthIssues.length, resolved: monthResolved.length });
+  }
+
+  const severityData = [
+    { name: 'S (치명)', count: allIssues.filter(i => i.severity === 'S').length, color: '#FF3B30' },
+    { name: 'A (중대)', count: allIssues.filter(i => i.severity === 'A').length, color: '#FF9500' },
+    { name: 'B (일반)', count: allIssues.filter(i => i.severity === 'B').length, color: '#FFCC00' },
+    { name: 'C (경미)', count: allIssues.filter(i => i.severity === 'C').length, color: '#34C759' },
+  ];
 
   const programs = await prisma.vehicleProgram.findMany();
 
@@ -89,7 +147,7 @@ export default async function Home({ searchParams }: HomeProps) {
             <div className={styles.kpiLabel}>진행 중인 이슈</div>
             <div className={styles.kpiValue}>{activeIssueCount}</div>
             <div className={`${styles.kpiTrend} ${styles.trendUp}`}>
-              <ArrowUpRight size={14} /> 12% 상승 (전주 대비)
+              <ArrowUpRight size={14} /> 실시간 업데이트
             </div>
           </div>
         </div>
@@ -100,9 +158,9 @@ export default async function Home({ searchParams }: HomeProps) {
           </div>
           <div className={styles.kpiContent}>
             <div className={styles.kpiLabel}>평균 해결 리드타임</div>
-            <div className={styles.kpiValue}>4.2d</div>
-            <div className={`${styles.kpiTrend} ${styles.trendDown}`}>
-              <ArrowDownRight size={14} /> 0.5d 감소 (목표 달성)
+            <div className={styles.kpiValue}>{avgLeadTime > 0 ? `${avgLeadTime.toFixed(1)}d` : '-'}</div>
+            <div className={`${styles.kpiTrend} ${avgLeadTime < 5 ? styles.trendDown : styles.trendUp}`}>
+              {avgLeadTime > 0 ? (avgLeadTime < 5 ? '목표 달성 중' : '관리 필요') : '데이터 부족'}
             </div>
           </div>
         </div>
@@ -112,10 +170,10 @@ export default async function Home({ searchParams }: HomeProps) {
             <CheckCircle2 size={20} />
           </div>
           <div className={styles.kpiContent}>
-            <div className={styles.kpiLabel}>미결재 이슈</div>
-            <div className={styles.kpiValue}>5</div>
+            <div className={styles.kpiLabel}>분석 대기 이슈</div>
+            <div className={styles.kpiValue}>{draftCount}</div>
             <div className={styles.kpiTrend} style={{ color: 'var(--system-gray)' }}>
-              긴급(S/A) 2건 포함
+              신규 등록 건 포함
             </div>
           </div>
         </div>
@@ -125,10 +183,10 @@ export default async function Home({ searchParams }: HomeProps) {
             <Share2 size={20} />
           </div>
           <div className={styles.kpiContent}>
-            <div className={styles.kpiLabel}>수평전개 이행률</div>
-            <div className={styles.kpiValue}>92%</div>
+            <div className={styles.kpiLabel}>수평전개 검토율</div>
+            <div className={styles.kpiValue}>{deploymentRate}%</div>
             <div className={`${styles.kpiTrend} ${styles.trendUp}`}>
-              <ArrowUpRight size={14} /> 2.4% 상승 (전월 대비)
+              <ArrowUpRight size={14} /> 분석 완료 건 기준
             </div>
           </div>
         </div>
@@ -137,12 +195,12 @@ export default async function Home({ searchParams }: HomeProps) {
       {/* 그래프 섹션 */}
       <div className={styles.chartGrid}>
         <section className={styles.chartSection}>
-          <h2 className={styles.chartTitle}>품질 이슈 발생 트렌드</h2>
-          <QualityTrendChart />
+          <h2 className={styles.chartTitle}>품질 이슈 발생 트렌드 (최근 7개월)</h2>
+          <QualityTrendChart data={trendData} />
         </section>
         <section className={styles.chartSection}>
           <h2 className={styles.chartTitle}>심각도별 분포 현황</h2>
-          <SeverityDistribution />
+          <SeverityDistribution data={severityData} />
         </section>
       </div>
 

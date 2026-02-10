@@ -61,11 +61,12 @@ async function main() {
     })
 
     // 3. Issues
-    // Clean up existing issues to avoid duplicates if re-seeded
     await prisma.issue.deleteMany({})
+    await prisma.issueStatusHistory.deleteMany({})
+    await prisma.issueAnalysis.deleteMany({})
 
-    await prisma.issue.create({
-        data: {
+    const issuesData = [
+        {
             title: '프론트 범퍼 도장 들뜸 현상',
             programId: 'MQ4',
             partNo: '82110-D1000',
@@ -77,10 +78,7 @@ async function main() {
             reportedBy: 'K. Kim',
             occurrenceDate: new Date('2024-02-10'),
         },
-    })
-
-    await prisma.issue.create({
-        data: {
+        {
             title: '클러스터 베젤 조립 유격',
             programId: 'EV6',
             partNo: '84710-P2000',
@@ -90,9 +88,72 @@ async function main() {
             status: 'CLOSED',
             occurrenceStep: 'Mass Production',
             reportedBy: 'S. Lee',
-            occurrenceDate: new Date('2024-02-08'),
+            occurrenceDate: new Date('2024-02-05'),
+        },
+        {
+            title: '도어 트림 가죽 들뜸',
+            programId: 'MQ4',
+            partNo: '84710-P2000',
+            lineId: 'LINE-C',
+            processId: 'ASSEMBLY',
+            severity: 'B',
+            status: 'DRAFT',
+            occurrenceStep: 'Development',
+            reportedBy: 'J. Park',
+            occurrenceDate: new Date('2024-02-09'),
+        },
+        {
+            title: '헤드램프 습기 유입',
+            programId: 'EV6',
+            partNo: '82110-D1000',
+            lineId: 'LINE-A',
+            processId: 'INSPECTION',
+            severity: 'A',
+            status: 'ANALYSIS',
+            occurrenceStep: 'Mass Production',
+            reportedBy: 'M. Choi',
+            occurrenceDate: new Date('2024-01-25'),
         }
-    })
+    ];
+
+    for (const data of issuesData) {
+        const issue = await prisma.issue.create({ data });
+
+        // Initial History
+        await prisma.issueStatusHistory.create({
+            data: {
+                issueId: issue.id,
+                toStatus: 'DRAFT',
+                comment: '이슈 최초 등록',
+                actorId: data.reportedBy,
+                createdAt: data.occurrenceDate
+            }
+        });
+
+        if (issue.status !== 'DRAFT') {
+            await prisma.issueStatusHistory.create({
+                data: {
+                    issueId: issue.id,
+                    fromStatus: 'DRAFT',
+                    toStatus: issue.status,
+                    comment: '상태 변경: ' + issue.status,
+                    actorId: 'System',
+                    createdAt: new Date(data.occurrenceDate.getTime() + 1000 * 60 * 60 * 24) // +1 day
+                }
+            });
+        }
+
+        if (issue.status === 'ANALYSIS') {
+            await prisma.issueAnalysis.create({
+                data: {
+                    issueId: issue.id,
+                    symptomDetail: '초기 증상 분석 완료',
+                    rootCauseDetail: '공정 산포 관리 미흡',
+                    horizontalDeploymentNeeded: true
+                }
+            });
+        }
+    }
 
     console.log('✅ Seeding finished.')
 }
