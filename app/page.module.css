@@ -52,6 +52,40 @@
   background: var(--system-gray6);
 }
 
+/* Filter Bar */
+.filterBar {
+  background: var(--system-gray6);
+  padding: 16px 24px;
+  border-radius: 16px;
+  border: 1px solid var(--system-gray5);
+}
+
+.filterSelect {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--system-gray4);
+  background: white;
+  font-size: 14px;
+  outline: none;
+}
+
+.filterButton {
+  padding: 8px 16px;
+  background: var(--foreground);
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clearButton {
+  font-size: 13px;
+  color: var(--system-gray);
+  text-decoration: none;
+  font-weight: 500;
+}
+
 /* KPI Grid */
 .kpiGrid {
   display: grid;
@@ -229,6 +263,11 @@
 .verification {
   background: rgba(175, 82, 222, 0.1);
   color: #AF52DE;
+}
+
+.issueTitleHover:hover {
+  color: var(--system-blue) !important;
+  text-decoration: underline;
 }
 
 .programBadge {

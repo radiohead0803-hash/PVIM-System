@@ -1,0 +1,145 @@
+import { prisma } from "@/app/lib/prisma";
+import styles from "./page.module.css";
+import { notFound } from "next/navigation";
+import {
+    Calendar,
+    User,
+    MapPin,
+    AlertTriangle,
+    CheckCircle2,
+    History,
+    FileDown,
+    Printer,
+    ChevronRight
+} from "lucide-react";
+import Link from "next/link";
+
+interface PageProps {
+    params: Promise<{ id: string }>
+}
+
+export default async function IssueDetailPage({ params }: PageProps) {
+    const { id } = await params;
+
+    const issue = await prisma.issue.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+            analysis: true,
+            history: {
+                orderBy: { createdAt: 'desc' },
+            },
+        },
+    });
+
+    if (!issue) {
+        notFound();
+    }
+
+    const steps = [
+        { num: 'D1', title: '팀 구성 (Team Formation)', content: issue.reportedBy + ' 외 품질관리팀' },
+        { num: 'D2', title: '문제 기술 (Problem Description)', content: issue.title },
+        { num: 'D3', title: '임시 봉쇄 조치 (ICA)', content: issue.analysis?.symptomDetail || '검토 중 (임시 조치 진행)' },
+        { num: 'D4', title: '근본 원인 분석 (Root Cause)', content: issue.analysis?.rootCauseDetail || '분석 진행 중' },
+        { num: 'D5', title: '영구 대책 수립 (PCA)', content: issue.analysis?.countermeasure || '대책 수립 중' },
+        { num: 'D6', title: '대책 실시 및 검증 (Validation)', content: issue.analysis?.verificationMethod || '검증 대기' },
+        { num: 'D7', title: '재발 방지 및 수평 전개 (Prevention)', content: '유사 차종 수평 전개 검토 필요' },
+        { num: 'D8', title: '팀 격려 및 종결 (Closure)', content: issue.status === 'CLOSED' ? '종결 완료' : '진행 중' },
+    ];
+
+    return (
+        <div className={styles.container}>
+            {/* Breadcrumb */}
+            <nav style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--system-gray)' }}>
+                <Link href="/">대시보드</Link>
+                <ChevronRight size={14} />
+                <span>이슈 상세 분석</span>
+            </nav>
+
+            <header className={styles.header}>
+                <div className={styles.titleArea}>
+                    <div className={styles.issueId}>ISS-{issue.id.toString().padStart(4, '0')}</div>
+                    <h1 className={styles.title}>{issue.title}</h1>
+                    <div className={styles.metaInfo}>
+                        <div className={styles.metaItem}><User size={16} /> {issue.reportedBy}</div>
+                        <div className={styles.metaItem}><Calendar size={16} /> {new Date(issue.occurrenceDate).toLocaleDateString()}</div>
+                        <div className={styles.metaItem}><MapPin size={16} /> {issue.programId} / {issue.lineId}</div>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <button className={`${styles.button} ${styles.secondaryButton}`} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <Printer size={18} /> 인쇄
+                    </button>
+                    <button className={`${styles.button} ${styles.primaryButton}`} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <FileDown size={18} /> 8D 보고서 (PDF)
+                    </button>
+                </div>
+            </header>
+
+            <div className={styles.contentGrid}>
+                <div className={styles.mainContent}>
+                    {/* 8D Steps */}
+                    {steps.map((step) => (
+                        <div key={step.num} className={styles.stepCard}>
+                            <div className={styles.stepHeader}>
+                                <div className={styles.stepNumber}>{step.num}</div>
+                                <h2 className={styles.stepTitle}>{step.title}</h2>
+                            </div>
+                            <div className={styles.stepBody}>
+                                <div className={styles.fieldValue}>{step.content}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <aside className={styles.sideContent}>
+                    <div className={styles.sideCard}>
+                        <h2 className={styles.sideTitle}>이슈 상태</h2>
+                        <div className={`${styles.badge} ${styles[issue.status.toLowerCase()]}`} style={{ textAlign: 'center', fontSize: 16, padding: '12px' }}>
+                            {issue.status}
+                        </div>
+
+                        <div style={{ marginTop: 20 }}>
+                            <h3 className={styles.fieldLabel} style={{ marginBottom: 12 }}>발생 정보</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <div className={styles.field}>
+                                    <span className={styles.fieldLabel}>부품번호</span>
+                                    <span className={styles.fieldValue}>{issue.partNo}</span>
+                                </div>
+                                <div className={styles.field}>
+                                    <span className={styles.fieldLabel}>공정</span>
+                                    <span className={styles.fieldValue}>{issue.processId}</span>
+                                </div>
+                                <div className={styles.field}>
+                                    <span className={styles.fieldLabel}>심각도</span>
+                                    <span className={`${styles.severity} ${styles['severity' + issue.severity]}`} style={{ width: 'fit-content', padding: '2px 8px' }}>
+                                        {issue.severity}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: 20 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                                <History size={18} />
+                                <h3 className={styles.sideTitle} style={{ fontSize: 15, margin: 0 }}>히스토리</h3>
+                            </div>
+                            <div className={styles.timeline}>
+                                {issue.history.map((h, idx) => (
+                                    <div key={h.id} className={styles.timelineItem}>
+                                        <div className={styles.timelineDot} style={{ backgroundColor: idx === 0 ? 'var(--system-blue)' : undefined }}></div>
+                                        {idx < issue.history.length - 1 && <div className={styles.timelineLine}></div>}
+                                        <div className={styles.timelineContent}>
+                                            <span className={styles.timelineDate}>{new Date(h.createdAt).toLocaleString()}</span>
+                                            <span className={styles.timelineText}>{h.comment}</span>
+                                            <span style={{ fontSize: 11, color: 'var(--system-gray)' }}>by {h.actorId}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    );
+}

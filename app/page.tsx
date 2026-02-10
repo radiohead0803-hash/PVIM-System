@@ -2,16 +2,43 @@ import styles from "./page.module.css";
 import { prisma } from "@/app/lib/prisma";
 import { QualityTrendChart, SeverityDistribution } from "./components/DashboardCharts";
 import { AlertCircle, Clock, CheckCircle2, Share2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import Link from 'next/link';
+import ExportButton from "./components/ExportButton";
 
-export default async function Home() {
+interface HomeProps {
+  searchParams: {
+    program?: string;
+    severity?: string;
+    period?: string;
+  };
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const { program, severity, period } = searchParams;
+
+  // 필터 조건 구성
+  const where: any = {};
+  if (program) where.programId = program;
+  if (severity) where.severity = severity;
+  if (period === '1m') {
+    where.occurrenceDate = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+  } else if (period === '3m') {
+    where.occurrenceDate = { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) };
+  }
+
   const issues = await prisma.issue.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
     take: 10
   });
 
+  const allIssues = await prisma.issue.findMany({ where }); // For export
+
   const activeIssueCount = await prisma.issue.count({
     where: { status: { not: 'CLOSED' } }
   });
+
+  const programs = await prisma.vehicleProgram.findMany();
 
   return (
     <div className={styles.dashboard}>
@@ -21,10 +48,36 @@ export default async function Home() {
           <p className={styles.sectionSub}>실시간 품질 현황 및 주요 지표 분석</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className={styles.secondaryButton}>보고서 내보내기</button>
-          <button className={styles.primaryButton}>신규 필터링</button>
+          <ExportButton data={allIssues} />
+          <Link href="/issues/new" className={styles.primaryButton} style={{ textDecoration: 'none' }}>이슈 등록</Link>
         </div>
       </header>
+
+      {/* 필터 바 추가 */}
+      <section className={styles.filterBar}>
+        <form style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <select name="program" defaultValue={program || ""} className={styles.filterSelect}>
+            <option value="">모든 차종</option>
+            {programs.map(p => (
+              <option key={p.id} value={p.id}>{p.id}</option>
+            ))}
+          </select>
+          <select name="severity" defaultValue={severity || ""} className={styles.filterSelect}>
+            <option value="">모든 심각도</option>
+            <option value="S">S (치명)</option>
+            <option value="A">A (중대)</option>
+            <option value="B">B (일반)</option>
+            <option value="C">C (경미)</option>
+          </select>
+          <select name="period" defaultValue={period || ""} className={styles.filterSelect}>
+            <option value="">전체 기간</option>
+            <option value="1m">최근 1개월</option>
+            <option value="3m">최근 3개월</option>
+          </select>
+          <button type="submit" className={styles.filterButton}>필터 적용</button>
+          <Link href="/" className={styles.clearButton}>초기화</Link>
+        </form>
+      </section>
 
       {/* KPI 카드 섹션 */}
       <section className={styles.kpiGrid}>
@@ -113,15 +166,17 @@ export default async function Home() {
             </thead>
             <tbody>
               {issues.map((issue) => (
-                <tr key={issue.id}>
+                <tr key={issue.id} style={{ cursor: 'pointer' }}>
                   <td style={{ width: 80 }}>
                     <span className={`${styles.severity} ${styles[`severity${issue.severity}`]}`}>
                       {issue.severity}
                     </span>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>ISS-{issue.id.toString().padStart(4, '0')}</div>
-                    <div style={{ fontSize: 13, color: 'var(--system-gray)', marginTop: 2 }}>{issue.title}</div>
+                    <Link href={`/issues/${issue.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>ISS-{issue.id.toString().padStart(4, '0')}</div>
+                      <div className={styles.issueTitleHover} style={{ fontSize: 13, color: 'var(--system-gray)', marginTop: 2 }}>{issue.title}</div>
+                    </Link>
                   </td>
                   <td>
                     <span className={styles.programBadge}>{issue.programId}</span>
