@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -50,15 +50,15 @@ model IssueAnalysis {
   issueId              Int      @id @map("issue_id")
   issue                Issue    @relation(fields: [issueId], references: [id])
   
-  symptomDetail        String?  @map("symptom_detail") @db.Text
+  symptomDetail        String?  @map("symptom_detail")
   rootCauseId          String?  @map("root_cause_id")
-  rootCauseDetail      String?  @map("root_cause_detail") @db.Text
+  rootCauseDetail      String?  @map("root_cause_detail")
   
-  countermeasure       String?  @db.Text
+  countermeasure       String? 
   isPermanent          Boolean  @default(false) @map("is_permanent")
   
-  verificationMethod   String?  @map("verification_method") @db.Text
-  verificationResult   String?  @map("verification_result") @db.Text
+  verificationMethod   String?  @map("verification_method")
+  verificationResult   String?  @map("verification_result")
   verifiedAt           DateTime? @map("verified_at")
   
   horizontalDeploymentNeeded Boolean @default(false) @map("horizontal_deployment_needed")
@@ -74,7 +74,7 @@ model IssueStatusHistory {
   
   fromStatus       String?  @map("from_status")
   toStatus         String   @map("to_status")
-  comment          String?  @db.Text
+  comment          String? 
   actorId          String   @map("actor_id")
   
   createdAt        DateTime @default(now()) @map("created_at")
@@ -112,7 +112,7 @@ model Approval {
   decision         String?  // PENDING, APPROVED, REJECTED
   signedAt         DateTime? @map("signed_at")
   signatureHash    String?  @map("signature_hash")
-  comment          String?  @db.Text
+  comment          String? 
 
   @@map("approvals")
 }
