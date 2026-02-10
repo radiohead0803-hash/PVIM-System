@@ -5,14 +5,13 @@ import {
     Calendar,
     User,
     MapPin,
-    AlertTriangle,
-    CheckCircle2,
     History,
     FileDown,
     Printer,
     ChevronRight
 } from "lucide-react";
 import Link from "next/link";
+import { AnalysisStep, ApprovalWidget, FileUploadWidget } from "./IssueDetailClient";
 
 interface PageProps {
     params: Promise<{ id: string }>
@@ -38,10 +37,10 @@ export default async function IssueDetailPage({ params }: PageProps) {
     const steps = [
         { num: 'D1', title: '팀 구성 (Team Formation)', content: issue.reportedBy + ' 외 품질관리팀' },
         { num: 'D2', title: '문제 기술 (Problem Description)', content: issue.title },
-        { num: 'D3', title: '임시 봉쇄 조치 (ICA)', content: issue.analysis?.symptomDetail || '검토 중 (임시 조치 진행)' },
-        { num: 'D4', title: '근본 원인 분석 (Root Cause)', content: issue.analysis?.rootCauseDetail || '분석 진행 중' },
-        { num: 'D5', title: '영구 대책 수립 (PCA)', content: issue.analysis?.countermeasure || '대책 수립 중' },
-        { num: 'D6', title: '대책 실시 및 검증 (Validation)', content: issue.analysis?.verificationMethod || '검증 대기' },
+        { num: 'D3', title: '임시 봉쇄 조치 (ICA)', content: issue.analysis?.symptomDetail, field: 'symptomDetail' },
+        { num: 'D4', title: '근본 원인 분석 (Root Cause)', content: issue.analysis?.rootCauseDetail, field: 'rootCauseDetail' },
+        { num: 'D5', title: '영구 대책 수립 (PCA)', content: issue.analysis?.countermeasure, field: 'countermeasure' },
+        { num: 'D6', title: '대책 실시 및 검증 (Validation)', content: issue.analysis?.verificationMethod, field: 'verificationMethod' },
         { num: 'D7', title: '재발 방지 및 수평 전개 (Prevention)', content: '유사 차종 수평 전개 검토 필요' },
         { num: 'D8', title: '팀 격려 및 종결 (Closure)', content: issue.status === 'CLOSED' ? '종결 완료' : '진행 중' },
     ];
@@ -52,7 +51,7 @@ export default async function IssueDetailPage({ params }: PageProps) {
             <nav style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--system-gray)' }}>
                 <Link href="/">대시보드</Link>
                 <ChevronRight size={14} />
-                <span>이슈 상세 분석</span>
+                <span>이슈 상세 분석 (8D)</span>
             </nav>
 
             <header className={styles.header}>
@@ -77,28 +76,29 @@ export default async function IssueDetailPage({ params }: PageProps) {
 
             <div className={styles.contentGrid}>
                 <div className={styles.mainContent}>
-                    {/* 8D Steps */}
+                    {/* 8D Steps - Each step can be interactive */}
                     {steps.map((step) => (
-                        <div key={step.num} className={styles.stepCard}>
-                            <div className={styles.stepHeader}>
-                                <div className={styles.stepNumber}>{step.num}</div>
-                                <h2 className={styles.stepTitle}>{step.title}</h2>
-                            </div>
-                            <div className={styles.stepBody}>
-                                <div className={styles.fieldValue}>{step.content}</div>
-                            </div>
-                        </div>
+                        <AnalysisStep
+                            key={step.num}
+                            num={step.num}
+                            title={step.title}
+                            initialContent={step.content || ''}
+                            issueId={issue.id}
+                            fieldName={step.field}
+                        />
                     ))}
                 </div>
 
                 <aside className={styles.sideContent}>
                     <div className={styles.sideCard}>
-                        <h2 className={styles.sideTitle}>이슈 상태</h2>
-                        <div className={`${styles.badge} ${styles[issue.status.toLowerCase()]}`} style={{ textAlign: 'center', fontSize: 16, padding: '12px' }}>
+                        <h2 className={styles.sideTitle}>이슈 상태 및 승인</h2>
+                        <div className={`${styles.badge} ${styles[issue.status.toLowerCase()]}`} style={{ textAlign: 'center', fontSize: 16, padding: '12px', marginBottom: 20 }}>
                             {issue.status}
                         </div>
 
-                        <div style={{ marginTop: 20 }}>
+                        <ApprovalWidget issueId={issue.id} status={issue.status} />
+
+                        <div style={{ marginTop: 24 }}>
                             <h3 className={styles.fieldLabel} style={{ marginBottom: 12 }}>발생 정보</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                 <div className={styles.field}>
@@ -118,7 +118,9 @@ export default async function IssueDetailPage({ params }: PageProps) {
                             </div>
                         </div>
 
-                        <div style={{ marginTop: 20 }}>
+                        <FileUploadWidget issueId={issue.id} />
+
+                        <div style={{ marginTop: 24, borderTop: '1px solid var(--system-gray5)', paddingTop: 24 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                                 <History size={18} />
                                 <h3 className={styles.sideTitle} style={{ fontSize: 15, margin: 0 }}>히스토리</h3>

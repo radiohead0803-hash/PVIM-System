@@ -50,3 +50,54 @@ export async function createIssue(formData: FormData) {
     revalidatePath('/')
     redirect('/')
 }
+
+export async function updateIssueAnalysis(issueId: number, data: any) {
+    try {
+        await prisma.issueAnalysis.upsert({
+            where: { issueId },
+            update: data,
+            create: {
+                issueId,
+                ...data
+            },
+        })
+
+        await prisma.issueStatusHistory.create({
+            data: {
+                issueId,
+                toStatus: 'ANALYSIS',
+                comment: '8D 분석 내용 수정됨',
+                actorId: '관리자',
+            }
+        })
+
+        revalidatePath(`/issues/${issueId}`)
+    } catch (error) {
+        console.error('Failed to update analysis:', error)
+        throw new Error('분석 내용 수정에 실패했습니다.')
+    }
+}
+
+export async function approveIssue(issueId: number, comment: string) {
+    try {
+        const issue = await prisma.issue.update({
+            where: { id: issueId },
+            data: { status: 'CLOSED' }
+        })
+
+        await prisma.issueStatusHistory.create({
+            data: {
+                issueId,
+                toStatus: 'CLOSED',
+                comment: comment || '최종 승인 완료',
+                actorId: '상위관리자',
+            }
+        })
+
+        revalidatePath(`/issues/${issueId}`)
+        revalidatePath('/')
+    } catch (error) {
+        console.error('Failed to approve issue:', error)
+        throw new Error('승인 처리에 실패했습니다.')
+    }
+}
